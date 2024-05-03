@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flask",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/uav_backend/run.py",
+            "env": {
+                "FLASK_APP": "${workspaceFolder}/uav_backend/run.py",
+                "FLASK_ENV": "development",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [
+                "run"
+            ],
+            "jinja": true,
+            "console": "integratedTerminal"
+        }
+    ]
+}

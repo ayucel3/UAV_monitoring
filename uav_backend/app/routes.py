@@ -28,18 +28,29 @@ def create_task():
         db.session.rollback()
         abort(500, description=f"Internal Server Error: {str(e)}")
 
+@api_blueprint.route('/tasks', methods=['GET'])
+def get_tasks():
+    try:
+        tasks = Task.query.filter(Task.is_deleted == False).all()  # Only fetch tasks that are not deleted
+        return jsonify([{'id': task.id, 'name': task.name, 'description': task.description, 'drone_id': task.drone_id, 'is_executed' : task.is_executed } for task in tasks])
+    except Exception as e:
+        abort(500, description=f"Internal Server Error: {str(e)}")
+
+
 @api_blueprint.route('/tasks/<int:id>', methods=['GET'])
 def get_task(id):
     try:
-        task = Task.query.get_or_404(id)
-        return jsonify({'id': task.id, 'name': task.name, 'description': task.description, 'drone_id': task.drone_id})
+        task = Task.query.filter_by(id=id, is_deleted=False).first_or_404()  # Ensure the task is not deleted
+        return jsonify({'id': task.id, 'name': task.name, 'description': task.description, 'drone_id': task.drone_id , 'is_executed' : task.is_executed})
     except Exception as e:
         abort(500, description=f"Internal Server Error: {str(e)}")
+
 
 @api_blueprint.route('/tasks/<int:id>/execute', methods=['POST'])
 def execute_task(id):
     try:
         task = Task.query.get_or_404(id)
+        task.is_executed = True
         images = [generate_noisy_image() for _ in range(5)]
         for img in images:
             image = Image(task_id=task.id, image_data=img)
@@ -57,4 +68,24 @@ def get_images(id):
         images_base64 = [base64.b64encode(image.image_data).decode('utf-8') for image in images]
         return jsonify({'images': images_base64})
     except Exception as e:
+        abort(500, description=f"Internal Server Error: {str(e)}")
+
+@api_blueprint.route('/images', methods=['GET'])
+def get_all_images():
+    try:
+        images = Image.query.all()
+        images_base64 = [base64.b64encode(image.image_data).decode('utf-8') for image in images]
+        return jsonify({'images': images_base64})
+    except Exception as e:
+        abort(500, description=f"Internal Server Error: {str(e)}")
+
+@api_blueprint.route('/tasks/<int:id>', methods=['DELETE'])
+def delete_task(id):
+    try:
+        task = Task.query.get_or_404(id)
+        task.is_deleted = True  
+        db.session.commit()
+        return jsonify({'message': 'Task deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
         abort(500, description=f"Internal Server Error: {str(e)}")
